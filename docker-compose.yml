@@ -1,0 +1,49 @@
+version: "3.8"
+
+services:
+  app:
+    build: ./note-app
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - REACT_APP_API_URL=http://localhost:8080 #APIとの通信はブラウザからの通信になるため、apiではなくlocalhostとなる。
+    volumes:
+      - ./note-app:/app
+  db:
+    container_name: note-app-db
+    image: postgres:15.1-alpine
+    ports:
+      - 5434:5432
+    environment:
+      POSTGRES_USER: db-dev-user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: dev-db
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    restart: always
+  api:
+    container_name: note-app-api
+    build: ./note-app-api
+    ports:
+      - "8080:8080"
+      - "2345:2345" #delv（デバッグ）用のポート
+    environment:
+      GO_ENV: dev
+      PORT: 8080
+      POSTGRES_USER: db-dev-user
+      POSTGRES_PW: password
+      POSTGRES_DB: dev-db
+      POSTGRES_PORT: 5432
+      POSTGRES_HOST: db # Dockerでapi起動時
+      #POSTGRES_HOST=localhost # ローカル起動時
+      SECRET: devsecret
+      API_DOMAIN: localhost
+      FE_URL: http://app:3000 #コンテナ起動時
+      FE_URL2: http://localhost:3000 #ローカル起動時
+    volumes:
+      - ./note-app-api:/app
+
+volumes:
+  db-data:
+    driver: local
